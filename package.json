@@ -1,0 +1,42 @@
+{
+  "name": "plagiarize",
+  "version": "0.1.0",
+  "description": "Capture CI environments and replay failed jobs locally",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": {
+    "plagiarize": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "action.yml",
+    "action/dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && node scripts/build-action.mjs",
+    "dev": "tsx src/cli.ts",
+    "test": "tsx --test test/*.test.ts",
+    "test:docker": "PLAGIARIZE_DOCKER_TEST=1 tsx --test test/docker.test.ts",
+    "typecheck": "tsc --project tsconfig.test.json",
+    "format": "prettier --write src test scripts *.json *.yml README.md .github",
+    "format:check": "prettier --check src test scripts *.json *.yml README.md .github",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@actions/artifact": "^6.3.1",
+    "@actions/core": "^3.0.1",
+    "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
