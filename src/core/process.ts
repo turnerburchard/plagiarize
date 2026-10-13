@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
 import { finished } from "node:stream/promises";
+import { errorMessage } from "./errors.js";
 
 export interface CommandResult {
   code: number;
@@ -92,7 +93,7 @@ export const execute: Executor = async (command, args, options = {}) => {
   });
   if (options.check !== false && result.code !== 0) {
     throw new Error(
-      `${command} exited with ${result.code}${options.logFile ? `; see ${options.logFile}` : `: ${result.stderr.trim()}`}`,
+      `${command} exited with ${result.code}${options.logFile ? `; see ${options.logFile}` : `: ${errorMessage(result.stderr.trim())}`}`,
     );
   }
   return result;

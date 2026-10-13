@@ -52,29 +52,36 @@ function responses(
     }
     const endpoint = args.at(-1)!;
     let response: unknown;
-    if (endpoint.endsWith("/attempts/2/jobs?per_page=100"))
-      response = [
-        { jobs: [selected] },
-        {
-          jobs: options.multiple
+    if (endpoint.endsWith("/attempts/2/jobs?per_page=100&page=1"))
+      response = {
+        jobs: Array.from({ length: 100 }, (_, index) => ({
+          ...selected,
+          id: index + 1,
+          name: `passing-${index}`,
+          conclusion: "success",
+        })),
+      };
+    else if (endpoint.endsWith("/attempts/2/jobs?per_page=100&page=2"))
+      response = {
+        jobs: [
+          selected,
+          ...(options.multiple
             ? [{ ...selected, id: 457, name: "other" }]
-            : [],
-        },
-      ];
-    else if (endpoint.endsWith("/artifacts?per_page=100"))
-      response = [
-        {
-          artifacts: options.artifact
-            ? [
-                {
-                  name: "plagiarize-123-2-test",
-                  expired: false,
-                  size_in_bytes: 1000,
-                },
-              ]
-            : [],
-        },
-      ];
+            : []),
+        ],
+      };
+    else if (endpoint.endsWith("/artifacts?per_page=100&page=1"))
+      response = {
+        artifacts: options.artifact
+          ? [
+              {
+                name: "plagiarize-123-2-test",
+                expired: false,
+                size_in_bytes: 1000,
+              },
+            ]
+          : [],
+      };
     else if (endpoint.includes("/contents/"))
       response = {
         encoding: "base64",
@@ -113,10 +120,8 @@ test("imports exact attempt and paginated jobs, then matches failed shell step",
   assert.equal(result.expected.failingStep, "test");
   assert.equal(result.source.commit, commit);
   assert.ok(
-    fake.calls.some(
-      (call) =>
-        call.includes("--paginate") &&
-        call.at(-1)!.includes("/attempts/2/jobs"),
+    fake.calls.some((call) =>
+      call.at(-1)!.includes("/attempts/2/jobs?per_page=100&page=2"),
     ),
   );
   assert.ok(result.gaps.some((gap) => gap.code === "retrospective-import"));

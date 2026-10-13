@@ -70986,7 +70986,7 @@ var ArtifactHttpClient = class {
   retryableRequest(operation) {
     return __awaiter4(this, void 0, void 0, function* () {
       let attempt = 0;
-      let errorMessage = "";
+      let errorMessage2 = "";
       let rawBody = "";
       let totalRetryWaitMilliseconds = 0;
       while (attempt < this.maxAttempts) {
@@ -71008,12 +71008,12 @@ var ArtifactHttpClient = class {
             return { response, body: body2 };
           }
           isRetryable = this.isRetryableHttpStatusCode(statusCode);
-          errorMessage = `Failed request: (${statusCode}) ${response.message.statusMessage}`;
+          errorMessage2 = `Failed request: (${statusCode}) ${response.message.statusMessage}`;
           if (body2.msg) {
             if (UsageError.isUsageErrorMessage(body2.msg)) {
               throw new UsageError();
             }
-            errorMessage = `${errorMessage}: ${body2.msg}`;
+            errorMessage2 = `${errorMessage2}: ${body2.msg}`;
           }
         } catch (error63) {
           if (error63 instanceof SyntaxError) {
@@ -71026,19 +71026,19 @@ var ArtifactHttpClient = class {
             throw new NetworkError(error63 === null || error63 === void 0 ? void 0 : error63.code);
           }
           isRetryable = true;
-          errorMessage = error63.message;
+          errorMessage2 = error63.message;
         }
         if (!isRetryable) {
-          throw new Error(`Received non-retryable error: ${errorMessage}`);
+          throw new Error(`Received non-retryable error: ${errorMessage2}`);
         }
         if (attempt + 1 === this.maxAttempts) {
-          throw new Error(`Failed to make request after ${this.maxAttempts} attempts: ${errorMessage}`);
+          throw new Error(`Failed to make request after ${this.maxAttempts} attempts: ${errorMessage2}`);
         }
         const retryTimeMilliseconds = retryAfterSeconds !== void 0 ? retryAfterSeconds * 1e3 : this.getExponentialRetryTimeMilliseconds(attempt);
         if (totalRetryWaitMilliseconds + retryTimeMilliseconds > this.retryTimeoutMilliseconds) {
-          throw new Error(`Retry wait of ${retryTimeMilliseconds} ms would exceed the maximum total retry wait of ${this.retryTimeoutMilliseconds} ms: ${errorMessage}`);
+          throw new Error(`Retry wait of ${retryTimeMilliseconds} ms would exceed the maximum total retry wait of ${this.retryTimeoutMilliseconds} ms: ${errorMessage2}`);
         }
-        info(`Attempt ${attempt + 1} of ${this.maxAttempts} failed with error: ${errorMessage}. Retrying request in ${retryTimeMilliseconds} ms...`);
+        info(`Attempt ${attempt + 1} of ${this.maxAttempts} failed with error: ${errorMessage2}. Retrying request in ${retryTimeMilliseconds} ms...`);
         yield this.sleep(retryTimeMilliseconds);
         totalRetryWaitMilliseconds += retryTimeMilliseconds;
         attempt++;
@@ -112210,6 +112210,21 @@ import { resolve as resolve2 } from "node:path";
 import { spawn } from "node:child_process";
 import { createWriteStream as createWriteStream2 } from "node:fs";
 import { finished } from "node:stream/promises";
+
+// src/core/errors.ts
+function errorMessage(error63) {
+  const message = error63 instanceof Error ? error63.message : String(error63);
+  return message.replace(/https?:\/\/[^\s"'<>]+/g, (value) => {
+    try {
+      const url3 = new URL(value);
+      return `${url3.origin}${url3.pathname}${url3.search ? "?[redacted]" : ""}`;
+    } catch {
+      return "[redacted URL]";
+    }
+  });
+}
+
+// src/core/process.ts
 var execute = async (command, args, options = {}) => {
   const result = await new Promise((resolve3, reject) => {
     const child = spawn(command, args, {
@@ -112275,7 +112290,7 @@ var execute = async (command, args, options = {}) => {
   });
   if (options.check !== false && result.code !== 0) {
     throw new Error(
-      `${command} exited with ${result.code}${options.logFile ? `; see ${options.logFile}` : `: ${result.stderr.trim()}`}`
+      `${command} exited with ${result.code}${options.logFile ? `; see ${options.logFile}` : `: ${errorMessage(result.stderr.trim())}`}`
     );
   }
   return result;
@@ -132544,7 +132559,7 @@ Captured ${manifest.job.steps.length} shell steps; ${manifest.gaps.filter((gap) 
 `
   ).write();
 } catch (error63) {
-  setFailed(error63 instanceof Error ? error63.message : String(error63));
+  setFailed(errorMessage(error63));
 }
 /*! Bundled license information:
 

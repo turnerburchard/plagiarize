@@ -10,6 +10,7 @@ import { installGitHubCapture } from "./providers/install.js";
 import { readManifest, writeJson } from "./core/files.js";
 import { requiredInputs } from "./core/manifest.js";
 import { execute } from "./core/process.js";
+import { errorMessage } from "./core/errors.js";
 import { ReplayRunner, lastResult, compareOutcome } from "./replay/runner.js";
 
 const help = `Plagiarize — capture CI, replay locally\n\nUsage:\n  plagiarize presets [--json]\n  plagiarize init --preset github/ubuntu-24.04 --command 'npm ci && npm test'\n  plagiarize capture --workflow .github/workflows/ci.yml --job test\n  plagiarize capture install github --workflow .github/workflows/ci.yml --job test --ref <action-sha>\n  plagiarize import <run-url> [--job <name-or-id>]\n  plagiarize reproduce [<run-url>] [--latest-failure] [--json]\n  plagiarize rerun --working-tree [--json]\n  plagiarize inspect [--json]\n  plagiarize compare [--json]\n  plagiarize shell\n\nOptions:\n  --file <path>     Capture path (default: .plagiarize/manifest.json)\n  --state <path>    Local state directory (default: .plagiarize at repository root)\n  --cwd <path>      Source checkout\n  --preset <id>    Provider/environment baseline\n  --node <x.y.z>   Exact Node version for retrospective imports or captures\n  --matrix <json>  Resolved matrix values\n  --env <NAME>     Explicitly pass a local environment variable (repeatable)\n  --timeout <sec>  Per-step timeout (default: 1800)\n  --json           Machine-readable stdout; replay exits with the job exit code\n\nReplays execute repository code in Docker with an isolated source copy.\nContainer images and Node archives are pinned; remaining fidelity gaps are reported.\n`;
@@ -216,7 +217,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  const message = error instanceof Error ? error.message : String(error);
+  const message = errorMessage(error);
   if (process.argv.includes("--json"))
     console.log(JSON.stringify({ error: { message }, reproduced: null }));
   else console.error(`plagiarize: ${message}`);

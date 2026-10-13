@@ -75,13 +75,22 @@ export class GitHubProvider {
   private async api(path: string): Promise<unknown> {
     return JSON.parse((await this.run("gh", ["api", path])).stdout);
   }
-  private async pages(path: string): Promise<unknown[]> {
-    const value: unknown = JSON.parse(
-      (await this.run("gh", ["api", "--paginate", "--slurp", path])).stdout,
+  private async pages(
+    path: string,
+    key: "jobs" | "artifacts",
+  ): Promise<unknown[]> {
+    const pages: unknown[] = [];
+    for (let page = 1; page <= 100; page++) {
+      const response = await this.api(`${path}&page=${page}`);
+      const rows = z.object({ [key]: z.array(z.unknown()) }).parse(response)[
+        key
+      ]!;
+      pages.push(response);
+      if (rows.length < 100) return pages;
+    }
+    throw new Error(
+      "GitHub response exceeded the 10,000-item pagination limit.",
     );
-    if (!Array.isArray(value))
-      throw new Error("Unexpected paginated GitHub response.");
-    return value;
   }
   async import(selection: GitHubSelection): Promise<Manifest> {
     let reference: { repository: string; runId: string };
@@ -117,6 +126,7 @@ export class GitHubProvider {
     const metadata = runSchema.parse(await this.api(base));
     const pages = await this.pages(
       `${base}/attempts/${metadata.run_attempt}/jobs?per_page=100`,
+      "jobs",
     );
     const jobs = pages.flatMap(
       (page) => z.object({ jobs: z.array(jobSchema) }).parse(page).jobs,
@@ -132,7 +142,10 @@ export class GitHubProvider {
         `Choose one job with --job (name or numeric ID). Available jobs: ${jobs.map((job) => `${job.id}: ${job.name}`).join(", ")}`,
       );
     const selected = candidates[0]!;
-    const artifactPages = await this.pages(`${base}/artifacts?per_page=100`);
+    const artifactPages = await this.pages(
+      `${base}/artifacts?per_page=100`,
+      "artifacts",
+    );
     const artifacts = artifactPages.flatMap(
       (page) =>
         z

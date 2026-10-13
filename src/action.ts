@@ -7,6 +7,7 @@ import { capture } from "./providers/capture.js";
 import { artifactName } from "./providers/github.js";
 import { writeJson } from "./core/files.js";
 import { fingerprint } from "./core/manifest.js";
+import { errorMessage } from "./core/errors.js";
 import { z } from "zod";
 
 try {
@@ -58,5 +59,5 @@ try {
     )
     .write();
 } catch (error) {
-  core.setFailed(error instanceof Error ? error.message : String(error));
+  core.setFailed(errorMessage(error));
 }
